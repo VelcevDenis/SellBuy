@@ -1,0 +1,46 @@
+{
+  "Version": 1,
+  "Hash": "maGCCx4mglQ9XsnujUonltOKCxw9Yqu/hiU5Qwsu5bs=",
+  "Source": "SellBuy",
+  "BasePath": "_content/SellBuy",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [
+    {
+      "Identity": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\Debug\\net7.0\\scopedcss\\bundle\\SellBuy.styles.css",
+      "SourceId": "SellBuy",
+      "SourceType": "Computed",
+      "ContentRoot": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\Debug\\net7.0\\scopedcss\\bundle\\",
+      "BasePath": "_content/SellBuy",
+      "RelativePath": "SellBuy.styles.css",
+      "AssetKind": "All",
+      "AssetMode": "CurrentProject",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "ScopedCss",
+      "AssetTraitValue": "ApplicationBundle",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\Debug\\net7.0\\scopedcss\\bundle\\SellBuy.styles.css"
+    },
+    {
+      "Identity": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\Debug\\net7.0\\scopedcss\\projectbundle\\SellBuy.bundle.scp.css",
+      "SourceId": "SellBuy",
+      "SourceType": "Computed",
+      "ContentRoot": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\Debug\\net7.0\\scopedcss\\projectbundle\\",
+      "BasePath": "_content/SellBuy",
+      "RelativePath": "SellBuy.bundle.scp.css",
+      "AssetKind": "All",
+      "AssetMode": "Reference",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "ScopedCss",
+      "AssetTraitValue": "ProjectBundle",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\Debug\\net7.0\\scopedcss\\projectbundle\\SellBuy.bundle.scp.css"
+    }
+  ]
+}
