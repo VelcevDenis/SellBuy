@@ -1,4 +1,7 @@
-﻿using SellBuy.Repositories;
+﻿using CSharpFunctionalExtensions;
+using Newtonsoft.Json;
+using SellBuy.Entities;
+using SellBuy.Repositories;
 using SellBuy.Services.Helpers;
 
 namespace SellBuy.Services
@@ -6,30 +9,42 @@ namespace SellBuy.Services
     public class OrdersService
     {
         private OrdersRepository _ordersRepository;
+        private ActivityLogService _activityLogService;
 
-        public OrdersService(OrdersRepository ordersRepository)
+        public OrdersService(OrdersRepository ordersRepository, ActivityLogService activityLogService)
         {
             _ordersRepository = ordersRepository;
+            _activityLogService = activityLogService;
         }
 
-        public async Task<Order> AddOrder(AddOrderDto OrderDto)
+        public async Task<Result<Order>> AddOrder(AddOrderDto OrderDto, string loginedUser)
         {
             var checkOrder = await _ordersRepository.Add(OrderDto);
             if (checkOrder==null)
-                throw new Exception("Order not found");
+                return Result.Failure<Order>("order not found");
 
-            return new Order()
+            var newOrder = new Order()
             {
-                Id= checkOrder.Id,
-                SubProductId= checkOrder.SubProductId,
-                Description= checkOrder.Description,
-                Title= checkOrder.Title,
+                Id = checkOrder.Id,
+                SubProductId = checkOrder.SubProductId,
+                Description = checkOrder.Description,
+                Title = checkOrder.Title,
                 Price = checkOrder.Price,
-                UserId= checkOrder.UserId,
-                CreateAt= checkOrder.CreateAt,
-                ExperiationAt= checkOrder.ExperiationAt,
+                UserId = checkOrder.UserId,
+                CreateAt = checkOrder.CreateAt,
+                ExperiationAt = checkOrder.ExperiationAt,
                 UpdateAt = checkOrder.UpdateAt
             };
+
+            _activityLogService.Add(new ActivityLog
+            {
+                ActorId = Convert.ToInt32(loginedUser),
+                TargetId = newOrder.Id,
+                ActivityType = ActivityType.OrderAdded,
+                Payload = JsonConvert.SerializeObject(newOrder)
+            });
+
+            return Result.Success(newOrder);
         }             
 
         public async Task<IEnumerable<Order>> ListOrders()
@@ -53,15 +68,36 @@ namespace SellBuy.Services
             }
             return orders;
         }
+        public async Task<IEnumerable<Order>> GetMyListOfOrders(int id)
+        {
+            var orders = new List<Order>();
+            foreach (var order in await _ordersRepository.GetAll(null, id))
+            {
+                orders.Add(new Order()
+                {
+                    Id = order.Id,
+                    SubProductId = order.SubProductId,
+                    Description = order.Description,
+                    Title = order.Title,
+                    Price = order.Price,
+                    UserId = order.UserId,
+                    CreateAt = order.CreateAt,
+                    ExperiationAt = order.ExperiationAt,
+                    UpdateAt = order.UpdateAt
+                });
 
-        public async Task<Order> GetOrder(int id)
+            }
+            return orders;
+        }
+
+        public async Task<Result<Order>> GetOrder(int id)
         {
             var checkOrder = await _ordersRepository.GetById(id);
 
             if (checkOrder == null)
-                return null;
+                return Result.Failure<Order>("order not found");
 
-            return new Order()
+            return Result.Success(new Order()
             {
                 Id = checkOrder.Id,
                 SubProductId = checkOrder.SubProductId,
@@ -72,40 +108,79 @@ namespace SellBuy.Services
                 CreateAt = checkOrder.CreateAt,
                 ExperiationAt = checkOrder.ExperiationAt,
                 UpdateAt = checkOrder.UpdateAt
-            };
+            });
         }
         
-        public async Task<Order> Update(int id, UpdateOrderDto updateOrderDto)
+        public async Task<Result<Order>> Update(int id, UpdateOrderDto updateOrderDto, string loginedUser)
         {
+            var orderBeforeUpdate = await _ordersRepository.GetById(id);
             var update = await _ordersRepository.UpdateOrder(id, updateOrderDto);
 
             if (!update)
-                throw new Exception("Order not found");
+                return Result.Failure<Order>("order not found");  
 
-            var checkOrder = await _ordersRepository.GetById(id);
+            var checkUser = await _ordersRepository.GetById(id);
 
-            return new Order()
+            GenerateUpdateLog(orderBeforeUpdate, checkUser, loginedUser);
+
+            return Result.Success(new Order()
             {
-                Id = checkOrder.Id,
-                SubProductId = checkOrder.SubProductId,
-                Description = checkOrder.Description,
-                Title = checkOrder.Title,
-                Price = checkOrder.Price,
-                UserId = checkOrder.UserId,
-                CreateAt = checkOrder.CreateAt,
-                ExperiationAt = checkOrder.ExperiationAt,
-                UpdateAt = checkOrder.UpdateAt
-            };
+                Id = orderBeforeUpdate.Id,
+                SubProductId = orderBeforeUpdate.SubProductId,
+                Description = orderBeforeUpdate.Description,
+                Title = orderBeforeUpdate.Title,
+                Price = orderBeforeUpdate.Price,
+                UserId = orderBeforeUpdate.UserId,
+                CreateAt = orderBeforeUpdate.CreateAt,
+                ExperiationAt = orderBeforeUpdate.ExperiationAt,
+                UpdateAt = orderBeforeUpdate.UpdateAt
+            });
         }
 
-        public async Task<bool> DeleteOrder(int id)
+        private void GenerateUpdateLog(Order orderBeforeUpdate, Order order, string loginedUser)
+        {
+            var compResult = SharedComparer.DiffObjects(
+                    orderBeforeUpdate,
+                    order,
+                    new List<string>() {
+                    "Order.Id",
+                    "Order.SubProductId",
+                    "Order.UserId",
+                    "Order.CreateAt",
+                    "Order.UpdateAt",
+                    }
+                );
+
+            _activityLogService.Add(new ActivityLog
+            {
+                ActorId = Convert.ToInt32(loginedUser),
+                ActivityType = ActivityType.OrderUpdated,
+                TargetId = order.Id,
+                Payload = JsonConvert.SerializeObject(compResult.Differences.Select(s => new
+                {
+                    Name = s.PropertyName,
+                    OldValue = s.Object1Value,
+                    NewValue = s.Object2Value
+                })),
+            });
+        }
+
+        public async Task<Result<bool>> DeleteOrder(int id, string loginedUser)
         {         
             var checkOrder = await _ordersRepository.Delete(id);
 
             if (checkOrder == null)
-                throw new Exception("Order not found");
+                return Result.Failure<bool>("order not found");
 
-            return checkOrder;
+            _activityLogService.Add(new ActivityLog
+            {
+                ActorId = Convert.ToInt32(loginedUser),
+                TargetId = id,
+                ActivityType = ActivityType.OrderDeleted,
+                Payload = JsonConvert.SerializeObject(id)
+            });
+
+            return Result.Success(checkOrder);
         }
     }
 }

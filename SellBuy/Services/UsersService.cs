@@ -1,4 +1,7 @@
-﻿using SellBuy.Repositories;
+﻿using CSharpFunctionalExtensions;
+using Newtonsoft.Json;
+using SellBuy.Entities;
+using SellBuy.Repositories;
 using SellBuy.Services.Helpers;
 
 namespace SellBuy.Services
@@ -6,31 +9,43 @@ namespace SellBuy.Services
     public class UsersService
     {
         private UsersRepository _usersRepository;
+        private ActivityLogService _activityLogService;
 
-        public UsersService(UsersRepository usersRepository)
+        public UsersService(UsersRepository usersRepository, ActivityLogService activityLogService)
         {
             _usersRepository = usersRepository;
+            _activityLogService = activityLogService;
         }
 
-        public async Task<User> AddUser(AddUserDto userDto)
+        public async Task<Result<User>> AddUser(AddUserDto userDto, string loginedUser)
         {
             var pbkdf2Hasher = new Pbkdf2Hasher();
             userDto.Password = pbkdf2Hasher.Generate(userDto.Password);
 
             var isAdded = await _usersRepository.Add(userDto);
             if (!isAdded)
-                throw new Exception("user not found");
+                return Result.Failure<User>("user not found");
 
-            var checkUser = await _usersRepository.GetByEmail(userDto.Email);           
+            var checkUser = await _usersRepository.GetByEmail(userDto.Email);
 
-            return new User()
+            var newUser = new User()
             {
-                Email = checkUser.Email,
                 Id = checkUser.Id,
+                Email = checkUser.Email,
                 RegisteredAt = checkUser.RegisteredAt,
                 Role = checkUser.Role,
                 Status = checkUser.Status
             };
+
+            _activityLogService.Add(new ActivityLog
+            {
+                ActorId = Convert.ToInt32(loginedUser),
+                TargetId = checkUser.Id,
+                ActivityType = ActivityType.UserAdded,
+                Payload = JsonConvert.SerializeObject(newUser)
+            });
+
+            return Result.Success(newUser);
         }             
 
         public async Task<IEnumerable<User>> ListUsers()
@@ -40,8 +55,8 @@ namespace SellBuy.Services
             {
                 users.Add(new User()
                 {
-                    Email = user.Email,
                     Id = user.Id,
+                    Email = user.Email,                   
                     RegisteredAt = user.RegisteredAt,
                     Role = user.Role,
                     Status = user.Status
@@ -51,24 +66,24 @@ namespace SellBuy.Services
             return users;
         }
 
-        public async Task<User> GetUser(int id)
+        public async Task<Result<User>> GetUser(int id)
         {
             var checkUser = await _usersRepository.GetById(id);
 
             if (checkUser == null)
-                return null;
+                return Result.Failure<User>("user not found");
 
-            return new User()
+            return Result.Success(new User()
             {
                 Email = checkUser.Email,
                 Id = checkUser.Id,
                 RegisteredAt = checkUser.RegisteredAt,
                 Role = checkUser.Role,
                 Status = checkUser.Status
-            };
+            });
         }
         
-        public async Task<User> Update(int id, UpdateUserDto updateUserDto)
+        public async Task<Result<User>> Update(int id, UpdateUserDto updateUserDto, string loginedUser)
         {
             if (!String.IsNullOrEmpty(updateUserDto.Password))
             {
@@ -85,28 +100,57 @@ namespace SellBuy.Services
                 {
                     var countOfAdmins = allUsers.Where(x => x.Role == UserRole.Admin).Count();
                     if (countOfAdmins <= 1 && updateUserDto.Role == user.Role)
-                        throw new Exception("Even one Admin should be in a system");
+                        return Result.Failure<User>("At least one admin should remain");
                 }
             }
+            var userBeforeUpdate = _usersRepository.GetById(id);
 
             var update = await _usersRepository.UpdateUser(id, updateUserDto);
 
             if (!update)
-                throw new Exception("user not found");
+                return Result.Failure<User>("user not found");
 
             var checkUser = await _usersRepository.GetById(id);
 
-            return new User()
+            GenerateUpdateLog(userBeforeUpdate.Result, checkUser, loginedUser);
+
+            return Result.Success(new User()
             {
                 Email = checkUser.Email,
                 Id = checkUser.Id,
                 RegisteredAt = checkUser.RegisteredAt,
                 Role = checkUser.Role,
                 Status = checkUser.Status
-            };
+            });
         }
 
-        public async Task<bool> DeleteUser(int id)
+        private void GenerateUpdateLog(User userBeforeUpdate, User user, string loginedUser)
+        {
+            var compResult = SharedComparer.DiffObjects(
+                    userBeforeUpdate,
+                    user,
+                    new List<string>() {
+                    "User.Id",
+                    "User.Email",
+                    "User.RegisteredAt",
+                    }
+                );
+
+            _activityLogService.Add(new ActivityLog
+            {
+                ActorId = Convert.ToInt32(loginedUser),
+                ActivityType = ActivityType.UserUpdated,
+                TargetId = user.Id,
+                Payload = JsonConvert.SerializeObject(compResult.Differences.Select(s => new
+                {
+                    Name = s.PropertyName,
+                    OldValue = s.Object1Value,
+                    NewValue = s.Object2Value
+                })),
+            });
+        }
+
+        public async Task<Result<bool>> DeleteUser(int id, string loginedUser)
         {
             var allUsers = await _usersRepository.GetAll();
             var user = allUsers.FirstOrDefault(x => x.Id == id);
@@ -115,15 +159,23 @@ namespace SellBuy.Services
             {
                 var countOfAdmins = allUsers.Where(x => x.Role == UserRole.Admin).Count();
                 if (countOfAdmins <= 1)
-                    throw new Exception("Even one Admin should be in a system");
+                    return Result.Failure<bool>("At least one admin should remain");
             }
 
             var checkUser = await _usersRepository.Delete(id);
 
             if (checkUser == null)
-                throw new Exception("user not found");
+                return Result.Failure<bool>("user not found");
 
-            return checkUser;
+            _activityLogService.Add(new ActivityLog
+            {
+                ActorId = Convert.ToInt32(loginedUser),
+                TargetId = id,
+                ActivityType = ActivityType.UserDeleted,
+                Payload = JsonConvert.SerializeObject(id)
+            });
+
+            return Result.Success(checkUser);
         }
     }
 }

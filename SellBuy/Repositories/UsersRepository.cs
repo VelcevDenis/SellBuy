@@ -58,7 +58,7 @@ namespace SellBuy.Repositories
             var connection = _dapperHelper.GetConnection();
             var queryRes = "SELECT * FROM dbo.users where RegisteredAt BETWEEN @From AND @To";
 
-            var transactions = await connection.Query<User>(queryRes, new
+            var transactions = connection.Query<User>(queryRes, new
             {
                 From = fromToDateDto.FromDate,
                 To = fromToDateDto.ToDate
@@ -102,7 +102,7 @@ namespace SellBuy.Repositories
             var connection = _dapperHelper.GetConnection();
             var queryRes = "DELETE FROM dbo.users WHERE Id = @Id";
 
-            return await await connection.ExecuteAsync(queryRes, new
+            return await connection.ExecuteAsync(queryRes, new
             {
                 Id = id
             }) > 0;

@@ -1,4 +1,9 @@
-﻿
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
+using StackExchange.Profiling;
+using StackExchange.Profiling.Data;
+using System.Data.Common;
+
 public class DapperHelper
 {
     private readonly string _connectionString;

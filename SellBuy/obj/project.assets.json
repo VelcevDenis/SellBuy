@@ -15,11 +15,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\SellBuy\\SellBuy\\SellBuy\\SellBuy.csproj",
+      "projectUniqueName": "C:\\SellBuy\\New folder\\SellBuy\\SellBuy\\SellBuy.csproj",
       "projectName": "SellBuy",
-      "projectPath": "C:\\SellBuy\\SellBuy\\SellBuy\\SellBuy.csproj",
+      "projectPath": "C:\\SellBuy\\New folder\\SellBuy\\SellBuy\\SellBuy.csproj",
       "packagesPath": "C:\\Users\\den_3\\.nuget\\packages\\",
-      "outputPath": "C:\\SellBuy\\SellBuy\\SellBuy\\obj\\",
+      "outputPath": "C:\\SellBuy\\New folder\\SellBuy\\SellBuy\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",

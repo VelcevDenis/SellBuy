@@ -8,6 +8,10 @@ using Microsoft.Extensions.Options;
 using SellBuy.Repositories;
 using Sprache;
 using CSharpFunctionalExtensions;
+using Newtonsoft.Json;
+using SellBuy.Entities;
+using Result = CSharpFunctionalExtensions.Result;
+using SellBuy.Services;
 
 public class AuthService
 {
@@ -58,7 +62,7 @@ public class AuthService
         {
             ActorId = checkUser.Id,
             TargetId = checkUser.Id,
-            ActivityType = ActivityType.ClientUpdated,
+            ActivityType = ActivityType.UserLogin,
             Payload = JsonConvert.SerializeObject(loginInfo)
         });
 

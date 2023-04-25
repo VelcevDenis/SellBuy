@@ -1,4 +1,6 @@
-﻿namespace SellBuy.Repositories
+﻿using Dapper;
+
+namespace SellBuy.Repositories
 {
     public class AuthRepository
     {
@@ -9,11 +11,9 @@
             _dapperHelper = dapperHelper;
         }
 
-        public async Task<User> GetUser(LoginDto loginDto, SqlConnection? conn = null)
+        public async Task<User> GetUser(LoginDto loginDto)
         {
             var connection = _dapperHelper.GetConnection();
-
-            var connection = conn ?? new SqlConnection(_connectionString);
             var queryRes = "SELECT * FROM dbo.users where Email=@Email";
 
             return await connection.QuerySingleOrDefaultAsync<User>(queryRes, new

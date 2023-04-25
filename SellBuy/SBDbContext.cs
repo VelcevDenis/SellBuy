@@ -13,6 +13,7 @@ namespace SellBuy
         public DbSet<CustomizedSetting> CustomizedSettings { get; set; }
         public DbSet<Image> Images { get; set; }
         public DbSet<Order> Orders { get; set; }
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

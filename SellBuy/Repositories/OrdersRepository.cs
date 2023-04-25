@@ -59,27 +59,26 @@ namespace SellBuy.Repositories
             });            
         }
 
-        public async Task<Order> GetByEmail(string email)
-        {
-            var connection = _dapperHelper.GetConnection();
-            var queryRes = "SELECT * FROM dbo.Orders where Email=@Email";
-
-            return await connection.QuerySingleOrDefaultAsync<Order>(queryRes, new
-            {
-                Email = email
-            });
-        }
-
-        public async Task<IEnumerable<Order>> GetAll(FromToDateDto? fromToDateDto = null)
+        public async Task<IEnumerable<Order>> GetAll(FromToDateDto? fromToDateDto = null, int? id = null)
         {
             var connection = _dapperHelper.GetConnection();
             var queryRes = "SELECT * FROM dbo.Orders";
 
             var parameters = new DynamicParameters();
-            if (fromToDateDto != null) {
-                queryRes = queryRes + " where CreateAt BETWEEN @From AND @To";
+
+            if(fromToDateDto != null || id != null)
+                queryRes = queryRes + " where";
+
+            if (fromToDateDto != null)
+            {
+                queryRes = queryRes + " CreateAt BETWEEN @From AND @To";
                 parameters.Add("From", fromToDateDto.FromDate, DbType.DateTime);
                 parameters.Add("To", fromToDateDto.ToDate, DbType.DateTime);
+            }
+            if (id != null)
+            {
+                queryRes = queryRes + " AND @id";
+                parameters.Add("id", id, DbType.Int32);
             }
 
             var transactions = await connection.QueryAsync<Order>(queryRes, parameters);
@@ -111,12 +110,12 @@ namespace SellBuy.Repositories
             return await connection.ExecuteAsync(queryRes, new
             {
                 Id = id,
-                Price = orderDto.Price,
-                Title = orderDto.Title,
-                Description = orderDto.Description,
-                CategoryId = orderDto.CategoryId,
+                Price = updateOrderDto.Price,
+                Title = updateOrderDto.Title,
+                Description = updateOrderDto.Description,
+                CategoryId = updateOrderDto.CategoryId,
                 UpdateAt = DateTime.UtcNow,
-                ExperiationAt = orderDto.ExperiationAt
+                ExperiationAt = updateOrderDto.ExperiationAt
             }) > 0;
         }
 
